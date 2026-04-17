@@ -17,11 +17,14 @@ export default async function handler(req, res) {
 
   // Validar que la URL configurada sea un Apps Script legítimo (previene SSRF)
   if (!APPS_SCRIPT_URL || !isAllowedAppsScriptUrl(APPS_SCRIPT_URL)) {
+    console.error('[documents] APPS_SCRIPT_URL no configurada o inválida')
+    return res.status(503).json({ error: 'Portal no configurado. Falta APPS_SCRIPT_URL.' })
+  }
 
   try {
     const response = await fetch(APPS_SCRIPT_URL, {
-      redirect: 'follow', // Apps Script redirige una vez antes de responder
-      signal: AbortSignal.timeout(10000) // timeout de 10s
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000)
     })
 
     if (!response.ok) {
@@ -30,10 +33,8 @@ export default async function handler(req, res) {
 
     const data = await response.json()
 
-    // Devolver directamente — los campos ya vienen escapados desde el script
     return res.status(200).json({ files: data.files || [] })
   } catch (error) {
-    // Nunca exponer detalles internos al cliente
     console.error('[documents] Error llamando Apps Script:', error.message)
     return res.status(500).json({ error: 'Error al obtener documentos' })
   }
