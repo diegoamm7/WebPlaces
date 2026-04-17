@@ -3,8 +3,12 @@
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL
 
-// Allowlist SSRF: solo se permite llamar a URLs de Apps Script de Google
-const ALLOWED_PREFIX = 'https://script.google.com/macros/s/'
+// Allowlist SSRF: se permiten ambos formatos de Apps Script de Google
+// - Cuentas personales: https://script.google.com/macros/s/
+// - Cuentas Workspace/corporativas: https://script.google.com/a/macros/
+const isAllowedAppsScriptUrl = (url) =>
+  url.startsWith('https://script.google.com/macros/s/') ||
+  url.startsWith('https://script.google.com/a/macros/')
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -12,10 +16,7 @@ export default async function handler(req, res) {
   }
 
   // Validar que la URL configurada sea un Apps Script legítimo (previene SSRF)
-  if (!APPS_SCRIPT_URL || !APPS_SCRIPT_URL.startsWith(ALLOWED_PREFIX)) {
-    console.error('[documents] APPS_SCRIPT_URL no configurada o inválida')
-    return res.status(503).json({ error: 'Portal no configurado. Falta APPS_SCRIPT_URL.' })
-  }
+  if (!APPS_SCRIPT_URL || !isAllowedAppsScriptUrl(APPS_SCRIPT_URL)) {
 
   try {
     const response = await fetch(APPS_SCRIPT_URL, {
